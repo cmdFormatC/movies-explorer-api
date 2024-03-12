@@ -4,7 +4,7 @@ const { handleErrorConstructor, handleDbErrors } = require('../utils/handleError
 
 const getMovies = async (req, res, next) => {
   try {
-    const movies = await Movie.find({});
+    const movies = await Movie.find({ owner: req.user._id });
     res.send(movies);
   } catch (err) {
     return next(handleDbErrors(err, 'Некорректный запрос'));

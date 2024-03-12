@@ -4,16 +4,17 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
+const helmet = require('helmet');
 
 const { requestLogger, errorLogger } = require('./middlewares/logger');
 const { handleError } = require('./middlewares/handleError');
-const {
-  createUser, login,
-} = require('./controllers/users');
-const auth = require('./middlewares/auth');
+
+const { limiter } = require('./utils/rateLimiter');
+
 const { handleErrorConstructor } = require('./utils/handleErrorTools');
 
 const { PORT = 3000, BASE_PATH = 'http://localhost:' } = process.env;
+const { DB_LINK } = process.env.NODE_ENV === 'production' ? process.env.DB_LINK : 'mongodb://localhost:27017/bitfilmsdb';
 const app = express();
 
 app.use(cors());
@@ -22,15 +23,15 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-mongoose.connect('mongodb://localhost:27017/bitfilmsdb');
+mongoose.connect(DB_LINK);
 
 app.use(requestLogger);
 
-app.post('/signin', login);
-app.post('/signup', createUser);
+app.use(limiter);
 
-app.use('/users', auth, require('./routes/users'));
-app.use('/movies', auth, require('./routes/movies'));
+app.use(helmet());
+
+app.use(require('./routes/index'));
 
 app.use(errorLogger);
 
